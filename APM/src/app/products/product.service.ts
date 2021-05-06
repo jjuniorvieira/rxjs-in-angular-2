@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { combineLatest, Observable, throwError } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, throwError } from 'rxjs';
 import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 
 import { Product } from './product';
@@ -46,17 +46,38 @@ export class ProductService {
     shareReplay(1)
   );
 
-  selectedProduct$ = this.productsWithCategory$
-    .pipe(
-      map(products =>
-        products.find(product => product.id === 5)
-      ),
-      tap(product => console.log('selectedProduct', product))
-    );
+
+  // Action stream for product selection
+  // Default to 0 for no product
+  // Must have a default so the stream emits at least once.
+  private productSelectedSubject = new BehaviorSubject<number>(0);
+  productSelectedAction$ = this.productSelectedSubject.asObservable();
+
+  // Currently selected product
+  // Used in both List and Detail pages,
+  // so use the shareReply to share it with any component that uses it
+  selectedProduct$ = combineLatest([
+    this.productsWithCategory$,
+    this.productSelectedAction$
+  ]).pipe(
+    map(([products, selectedProductId]) =>
+      products.find(product => product.id === selectedProductId)
+    ),
+    tap(product => console.log('selectedProduct', product)),
+    shareReplay(1)
+  );
+
+
 
   constructor(private http: HttpClient,
     private productCategoryService: ProductCategoryService,
     private supplierService: SupplierService) { }
+
+
+  // Change the selected product
+  selectedProductChanged(selectedProductId: number): void {
+    this.productSelectedSubject.next(selectedProductId);
+  }
 
   private fakeProduct(): Product {
     return {
