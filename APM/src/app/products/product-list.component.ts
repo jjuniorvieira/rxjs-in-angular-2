@@ -21,7 +21,7 @@ export class ProductListComponent {
   // Merge Data stream with Action stream
   // To filter to the selected category
   products$ = combineLatest([
-    this.productService.productsWithCategory$,
+    this.productService.productsWithAdd$,
     this.categorySelectedAction$
   ])
     .pipe(
@@ -49,7 +49,7 @@ export class ProductListComponent {
     private productCategoryService: ProductCategoryService) { }
 
   onAdd(): void {
-    console.log('Not yet implemented');
+    this.productService.addProduct();
   }
 
   onSelected(categoryId: string): void {
