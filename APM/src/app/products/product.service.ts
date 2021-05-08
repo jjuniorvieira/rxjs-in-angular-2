@@ -43,7 +43,7 @@ export class ProductService {
         searchKey: [product.productName]
       }) as Product)
     ),
-    shareReplay(1)
+    shareReplay(1)// cache buffersize 1
   );
 
 
@@ -64,7 +64,7 @@ export class ProductService {
       products.find(product => product.id === selectedProductId)
     ),
     tap(product => console.log('selectedProduct', product)),
-    shareReplay(1)
+    shareReplay(1)// cache buffersize 1
   );
 
 
