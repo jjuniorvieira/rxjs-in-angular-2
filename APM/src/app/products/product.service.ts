@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { BehaviorSubject, combineLatest, merge, Observable, Subject, throwError } from 'rxjs';
+import { BehaviorSubject, combineLatest, merge, Observable, of, Subject, throwError } from 'rxjs';
 import { catchError, map, scan, shareReplay, tap } from 'rxjs/operators';
 
 import { Product } from './product';
@@ -90,6 +90,23 @@ export class ProductService {
     );
 
 
+
+  // Suppliers for the selected product
+  // Finds suppliers from download of all suppliers
+  // Add a catchError so that the display appears
+  // even if the suppliers cannot be retrieved.
+  // Note that it must return an empty array and not EMPTY
+  // or the stream will complete.
+  selectedProductSuppliers$ = combineLatest([
+    this.selectedProduct$,
+    this.supplierService.suppliers$
+  ]).pipe(
+    map(([selectedProduct, suppliers]) =>
+      suppliers.filter(
+        supplier => selectedProduct.supplierIds.includes(supplier.id) 
+      )
+    )
+  );
 
   constructor(private http: HttpClient,
     private productCategoryService: ProductCategoryService,
