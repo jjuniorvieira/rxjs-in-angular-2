@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { BehaviorSubject, combineLatest, merge, Observable, of, Subject, throwError } from 'rxjs';
-import { catchError, map, scan, shareReplay, tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, from, merge, Observable, of, Subject, throwError } from 'rxjs';
+import { catchError, filter, map, mergeMap, scan, shareReplay, switchMap, tap, toArray } from 'rxjs/operators';
 
 import { Product } from './product';
 import { SupplierService } from '../suppliers/supplier.service';
 import { ProductCategoryService } from '../product-categories/product-category.service';
+import { Supplier } from '../suppliers/supplier';
 
 @Injectable({
   providedIn: 'root'
@@ -97,16 +98,33 @@ export class ProductService {
   // even if the suppliers cannot be retrieved.
   // Note that it must return an empty array and not EMPTY
   // or the stream will complete.
-  selectedProductSuppliers$ = combineLatest([
-    this.selectedProduct$,
-    this.supplierService.suppliers$
-  ]).pipe(
-    map(([selectedProduct, suppliers]) =>
-      suppliers.filter(
-        supplier => selectedProduct.supplierIds.includes(supplier.id) 
+
+  // selectedProductSuppliers$ = combineLatest([
+  //   this.selectedProduct$,
+  //   this.supplierService.suppliers$
+  // ]).pipe(
+  //   map(([selectedProduct, suppliers]) =>
+  //     suppliers.filter(
+  //       supplier => selectedProduct.supplierIds.includes(supplier.id) 
+  //     )
+  //   )
+  // );
+
+
+  // Suppliers for the selected product
+  // Only gets the suppliers it needs
+  selectedProductSuppliers$ = this.selectedProduct$
+    .pipe(
+      filter(selectedProduct => Boolean(selectedProduct)),//if doesnt have selectedProduct stops execution
+      switchMap(selectedProduct => //if multiply is selected only the lates one will be displayed 
+        from(selectedProduct.supplierIds)
+          .pipe(
+            mergeMap(supplierId => this.http.get<Supplier>(`${this.suppliersUrl}/${supplierId}`)),
+            toArray(),
+            tap(suppliers => console.log('product suppliers', JSON.stringify(suppliers)))
+          )
       )
-    )
-  );
+    );
 
   constructor(private http: HttpClient,
     private productCategoryService: ProductCategoryService,
@@ -136,7 +154,7 @@ export class ProductService {
       quantityInStock: 30
     };
   }
-  
+
 
   private handleError(err: any): Observable<never> {
     // in a real world app, we may send the server to some remote logging infrastructure
